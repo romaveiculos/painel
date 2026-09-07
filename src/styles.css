@@ -119,7 +119,8 @@ button { cursor: pointer; }
 .form-section-title h2 { margin: 0; font-size: 17px; }
 .form-section-title p { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
-.upload-zone { min-height: 135px; border: 1.5px dashed #cfcec8; border-radius: 11px; background: #fafaf8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; text-align: center; cursor: pointer; }
+.upload-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.upload-zone { min-height: 135px; padding: 16px; border: 1.5px dashed #cfcec8; border-radius: 11px; background: #fafaf8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; text-align: center; cursor: pointer; }
 .upload-zone:hover { border-color: var(--gold); background: #fffaf0; }
 .upload-zone svg { color: #a77d18; }
 .upload-zone strong { font-size: 13px; }
@@ -225,6 +226,7 @@ button { cursor: pointer; }
   .row-actions { grid-column: 3; grid-row: 2; }
   .row-actions > button:not(:last-child) { display: none; }
   .form-grid, .editor-side { grid-template-columns: 1fr; }
+  .upload-choices { grid-template-columns: 1fr; }
   .option-grid { grid-template-columns: 1fr; }
   .form-section { padding: 19px 15px; }
   .media-grid { grid-template-columns: repeat(2, 1fr); }
