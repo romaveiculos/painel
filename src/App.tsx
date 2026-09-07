@@ -127,7 +127,8 @@ function AdminApp({ session }: { session: Session }) {
 }
 
 function Dashboard({ vehicles, published, sold, openNew, openEdit }: { vehicles: Vehicle[]; published: number; sold: number; openNew: () => void; openEdit: (v: Vehicle) => void }) {
-  return <><div className="page-heading"><div><span>DOMINGO, 07 DE SETEMBRO</span><h1>Olá! O que vamos anunciar hoje?</h1><p>Acompanhe seu estoque e faça alterações sem precisar mexer no site.</p></div><button className="primary" onClick={openNew}><Plus /> Novo veículo</button></div>
+  const today = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date()).toUpperCase()
+  return <><div className="page-heading"><div><span>{today}</span><h1>Olá! O que vamos anunciar hoje?</h1><p>Acompanhe seu estoque e faça alterações sem precisar mexer no site.</p></div><button className="primary" onClick={openNew}><Plus /> Novo veículo</button></div>
     <div className="stats"><Stat icon={<CarFront />} label="Total no estoque" value={vehicles.length} /><Stat icon={<Eye />} label="Publicados no site" value={published} tone="green" /><Stat icon={<CircleDollarSign />} label="Vendidos" value={sold} tone="gold" /></div>
     <section className="panel"><div className="panel-title"><div><small>ALTERADOS RECENTEMENTE</small><h2>Últimos veículos</h2></div><span>{vehicles.length} anúncios</span></div>{vehicles.length ? <div className="recent-list">{vehicles.slice(0, 5).map(v => <VehicleRow key={v.id} vehicle={v} onEdit={() => openEdit(v)} />)}</div> : <EmptyState onClick={openNew} />}</section>
   </>
