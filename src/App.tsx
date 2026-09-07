@@ -50,7 +50,7 @@ function App() {
 function PasswordReset({ onDone }: { onDone: () => void }) {
   const [password, setPassword] = useState(''); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('')
   async function submit(e: FormEvent) { e.preventDefault(); setBusy(true); const { error } = await supabase.auth.updateUser({ password }); setBusy(false); if (error) setMessage(error.message); else onDone() }
-  return <main className="auth-shell"><section className="auth-brand"><img src="/logo-roma.png" alt="Roma Veículos" /><div><span>RECUPERAÇÃO SEGURA</span><h1>Crie sua nova senha.</h1><p>Escolha uma senha forte que só a equipe responsável conheça.</p></div></section><section className="auth-card"><div className="auth-title"><ShieldCheck /><div><small>NOVA SENHA</small><h2>Atualizar acesso</h2></div></div><form onSubmit={submit}><Field label="Nova senha"><input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} required autoComplete="new-password" /></Field>{message && <div className="form-message">{message}</div>}<button className="primary full" disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Save />}Salvar nova senha</button></form></section></main>
+  return <main className="auth-shell"><section className="auth-brand"><img src="/logo-roma-quadrado.jpeg" alt="Roma Veículos" /><div><span>RECUPERAÇÃO SEGURA</span><h1>Crie sua nova senha.</h1><p>Escolha uma senha forte que só a equipe responsável conheça.</p></div></section><section className="auth-card"><div className="auth-title"><ShieldCheck /><div><small>NOVA SENHA</small><h2>Atualizar acesso</h2></div></div><form onSubmit={submit}><Field label="Nova senha"><input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} required autoComplete="new-password" /></Field>{message && <div className="form-message">{message}</div>}<button className="primary full" disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Save />}Salvar nova senha</button></form></section></main>
 }
 
 function AuthScreen() {
@@ -74,7 +74,7 @@ function AuthScreen() {
     setMessage(error ? error.message : 'Enviamos as instruções de recuperação para o e-mail.'); setBusy(false)
   }
   return <main className="auth-shell">
-    <section className="auth-brand"><img src="/logo-roma.png" alt="Roma Veículos" /><div><span>Painel administrativo</span><h1>Seu estoque, simples de cuidar.</h1><p>Publique veículos, organize fotos e atualize os contatos do site em poucos passos.</p></div></section>
+    <section className="auth-brand"><img src="/logo-roma-quadrado.jpeg" alt="Roma Veículos" /><div><span>Painel administrativo</span><h1>Seu estoque, simples de cuidar.</h1><p>Publique veículos, organize fotos e atualize os contatos do site em poucos passos.</p></div></section>
     <section className="auth-card">
       <div className="auth-title"><ShieldCheck /><div><small>ACESSO SEGURO</small><h2>{mode === 'login' ? 'Entrar no painel' : 'Criar primeiro acesso'}</h2></div></div>
       <form onSubmit={submit}>
@@ -123,7 +123,7 @@ function AdminApp({ session }: { session: Session }) {
   return <div className="admin-shell">
     <aside className={menu ? 'sidebar open' : 'sidebar'}>
       <button className="sidebar-close" onClick={() => setMenu(false)} aria-label="Fechar menu"><X /></button>
-      <img className="sidebar-logo" src="/logo-roma.png" alt="Roma Veículos" />
+      <img className="sidebar-logo" src="/logo-roma-quadrado.jpeg" alt="Roma Veículos" />
       <div className="side-title">PAINEL ADMINISTRATIVO</div>
       <nav>
         <Nav active={view === 'dashboard'} icon={<LayoutDashboard />} label="Visão geral" onClick={() => { setView('dashboard'); setMenu(false) }} />

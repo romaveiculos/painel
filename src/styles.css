@@ -11,7 +11,7 @@ button { cursor: pointer; }
 .auth-shell { min-height: 100vh; display: grid; grid-template-columns: 1.12fr .88fr; background: #0b0c10; }
 .auth-brand { position: relative; padding: clamp(40px, 7vw, 110px); display: flex; flex-direction: column; justify-content: space-between; color: #fff; overflow: hidden; background: radial-gradient(circle at 30% 30%, #282720, transparent 36%), linear-gradient(145deg, #090a0d, #17181b); }
 .auth-brand::after { content: ''; position: absolute; width: 520px; height: 520px; right: -190px; bottom: -240px; border: 1px solid rgba(220,174,56,.35); border-radius: 50%; box-shadow: 0 0 0 70px rgba(220,174,56,.03), 0 0 0 140px rgba(220,174,56,.02); }
-.auth-brand img { width: 108px; height: 108px; object-fit: contain; border-radius: 50%; z-index: 1; }
+.auth-brand img { width: 108px; height: 108px; object-fit: contain; border-radius: 12px; z-index: 1; }
 .auth-brand div { max-width: 650px; z-index: 1; }
 .auth-brand span, .page-heading span, .panel-title small, .topbar small, .side-title { color: var(--gold); font-size: 11px; letter-spacing: .18em; font-weight: 800; }
 .auth-brand h1 { margin: 16px 0; font-size: clamp(42px, 5.4vw, 78px); line-height: .98; letter-spacing: -.055em; }
@@ -43,7 +43,7 @@ button { cursor: pointer; }
 
 .admin-shell { min-height: 100vh; display: grid; grid-template-columns: 244px 1fr; }
 .sidebar { position: sticky; top: 0; height: 100vh; background: var(--black); color: #fff; padding: 25px 18px 20px; display: flex; flex-direction: column; z-index: 20; }
-.sidebar-logo { width: 72px; height: 72px; border-radius: 50%; object-fit: contain; margin: 2px 12px 17px; }
+.sidebar-logo { width: 72px; height: 72px; border-radius: 9px; object-fit: contain; margin: 2px 12px 17px; }
 .side-title { color: #7e8088; margin: 0 12px 28px; font-size: 8px; }
 .sidebar nav { display: grid; gap: 5px; }
 .nav-item { min-height: 47px; padding: 0 13px; border: 0; border-radius: 9px; background: transparent; color: #a7a9b0; display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; text-align: left; font-weight: 700; font-size: 13px; }
