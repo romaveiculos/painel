@@ -9,10 +9,27 @@ import { mediaUrl, supabase } from './lib/supabase'
 import type { SiteSettings, Vehicle, VehicleMedia, VehicleStatus } from './types'
 
 const BADGES = ['Baixo KM', 'Único dono', 'Laudo cautelar', 'Abaixo da FIPE']
+const OPTIONAL_GROUPS = [
+  { title: 'Conforto e praticidade', items: ['Ar-condicionado', 'Ar-condicionado digital', 'Ar-condicionado dual zone', 'Direção hidráulica', 'Direção elétrica', 'Bancos de couro', 'Banco do motorista com ajuste de altura', 'Bancos elétricos', 'Bancos com aquecimento', 'Volante com ajuste de altura', 'Volante multifuncional', 'Vidros elétricos', 'Travas elétricas', 'Retrovisores elétricos', 'Rebatimento elétrico dos retrovisores', 'Chave presencial', 'Partida por botão', 'Piloto automático', 'Controle de velocidade adaptativo', 'Sensor de chuva', 'Acendimento automático dos faróis'] },
+  { title: 'Segurança', items: ['Airbags', 'Airbags laterais', 'Freios ABS', 'Controle de estabilidade', 'Controle de tração', 'Assistente de partida em rampa', 'Alerta de colisão', 'Frenagem automática de emergência', 'Alerta de ponto cego', 'Alerta de mudança de faixa', 'Assistente de permanência em faixa', 'Isofix', 'Sensor de estacionamento dianteiro', 'Sensor de estacionamento traseiro', 'Câmera de ré', 'Câmera 360°', 'Faróis de neblina', 'Faróis de LED'] },
+  { title: 'Tecnologia e conectividade', items: ['Central multimídia', 'Android Auto', 'Apple CarPlay', 'Bluetooth', 'GPS integrado', 'Computador de bordo', 'Painel digital', 'Carregador por indução', 'Entrada USB', 'Sistema de som premium', 'Comandos de voz'] },
+  { title: 'Exterior e desempenho', items: ['Rodas de liga leve', 'Teto solar', 'Teto panorâmico', 'Rack de teto', 'Engate', 'Protetor de caçamba', 'Capota marítima', 'Tração 4x4', 'Modos de condução', 'Sistema start-stop', 'Câmbio borboleta'] },
+]
 const STATUS: Record<VehicleStatus, string> = { draft: 'Rascunho', published: 'Publicado', sold: 'Vendido', archived: 'Arquivado' }
 const emptySettings: SiteSettings = {
   id: true, business_name: 'Roma Veículos', whatsapp: '5562998306826', instagram_url: '', facebook_url: '',
   email: '', address_line: '', city: 'Goiânia', state: 'GO', postal_code: '', maps_url: '', opening_hours: '',
+}
+
+function titleCase(value: string) {
+  return value.trim().toLocaleLowerCase('pt-BR').replace(/(^|[\s/\-])([\p{L}\p{N}])/gu, (_, separator, character) => separator + character.toLocaleUpperCase('pt-BR'))
+}
+
+function sentenceCase(value: string) {
+  const text = value.trim()
+  if (!text) return ''
+  const normalized = text === text.toLocaleUpperCase('pt-BR') ? text.toLocaleLowerCase('pt-BR') : text
+  return normalized.charAt(0).toLocaleUpperCase('pt-BR') + normalized.slice(1)
 }
 
 function App() {
@@ -151,17 +168,24 @@ function VehicleList({ vehicles, openNew, openEdit, reload }: { vehicles: Vehicl
 
 function VehicleRow({ vehicle, onEdit, onDelete }: { vehicle: Vehicle; onEdit: () => void; onDelete?: () => void }) {
   const cover = vehicle.vehicle_media?.find(m => m.is_cover) || vehicle.vehicle_media?.find(m => m.kind === 'image')
-  return <article className="vehicle-row"><div className="vehicle-thumb">{cover ? <img src={mediaUrl(cover.storage_path)} alt="" style={{ objectPosition: cover.object_position }} /> : <CarFront />}</div><div className="vehicle-main"><strong>{vehicle.brand} {vehicle.model}</strong><span>{vehicle.version || 'Versão não informada'} · {vehicle.year_manufacture}/{vehicle.year_model}</span></div><div className="vehicle-price">{Number(vehicle.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<small>{vehicle.mileage.toLocaleString('pt-BR')} km</small></div><span className={`status ${vehicle.status}`}>{STATUS[vehicle.status]}</span><div className="row-actions"><button onClick={onEdit} title="Editar"><Pencil /></button>{onDelete && <button className="danger-icon" onClick={onDelete} title="Excluir"><Trash2 /></button>}<button onClick={onEdit}><ChevronRight /></button></div></article>
+  return <article className="vehicle-row"><div className="vehicle-thumb">{cover ? <img src={mediaUrl(cover.storage_path)} alt="" style={{ objectPosition: cover.object_position }} /> : <CarFront />}</div><div className="vehicle-main"><strong>{titleCase(vehicle.brand)} {titleCase(vehicle.model)}</strong><span>{vehicle.version ? titleCase(vehicle.version) : 'Versão não informada'} · {vehicle.year_manufacture}/{vehicle.year_model}</span></div><div className="vehicle-price">{Number(vehicle.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<small>{vehicle.mileage.toLocaleString('pt-BR')} km</small></div><span className={`status ${vehicle.status}`}>{STATUS[vehicle.status]}</span><div className="row-actions"><button onClick={onEdit} title="Editar"><Pencil /></button>{onDelete && <button className="danger-icon" onClick={onDelete} title="Excluir"><Trash2 /></button>}<button onClick={onEdit}><ChevronRight /></button></div></article>
 }
 
 type PendingFile = { file: File; preview: string; kind: 'image' | 'video' }
+type VehicleForm = {
+  status: VehicleStatus; featured: boolean; brand: string; model: string; version: string;
+  year_manufacture: number; year_model: number; mileage: number; price: number;
+  transmission: string; fuel: string; color: string; body_type: string;
+  description: string; optional_items: string[]; badges: string[];
+}
 function VehicleEditor({ vehicle, userId, onDone, onCancel }: { vehicle: Vehicle | null; userId: string; onDone: () => void; onCancel: () => void }) {
-  const [form, setForm] = useState({ status: (vehicle?.status || 'draft') as VehicleStatus, featured: vehicle?.featured || false, brand: vehicle?.brand || '', model: vehicle?.model || '', version: vehicle?.version || '', year_manufacture: vehicle?.year_manufacture || new Date().getFullYear(), year_model: vehicle?.year_model || new Date().getFullYear(), mileage: vehicle?.mileage || 0, price: Number(vehicle?.price || 0), transmission: vehicle?.transmission || '', fuel: vehicle?.fuel || '', color: vehicle?.color || '', body_type: vehicle?.body_type || '', description: vehicle?.description || '', optional_items: vehicle?.optional_items?.join(', ') || '', badges: vehicle?.badges || [] as string[] })
+  const [form, setForm] = useState<VehicleForm>({ status: (vehicle?.status || 'draft') as VehicleStatus, featured: vehicle?.featured || false, brand: vehicle?.brand || '', model: vehicle?.model || '', version: vehicle?.version || '', year_manufacture: vehicle?.year_manufacture || new Date().getFullYear(), year_model: vehicle?.year_model || new Date().getFullYear(), mileage: vehicle?.mileage || 0, price: Number(vehicle?.price || 0), transmission: vehicle?.transmission || '', fuel: vehicle?.fuel || '', color: vehicle?.color || '', body_type: vehicle?.body_type || '', description: vehicle?.description || '', optional_items: vehicle?.optional_items || [], badges: vehicle?.badges || [] })
   const [media, setMedia] = useState<VehicleMedia[]>(vehicle?.vehicle_media || [])
   const [pending, setPending] = useState<PendingFile[]>([])
   const [pendingCover, setPendingCover] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState('')
+  const [previewOpen, setPreviewOpen] = useState(false)
   const set = (key: string, value: unknown) => setForm(prev => ({ ...prev, [key]: value }))
   function filesSelected(files: FileList | null) {
     if (!files) return
@@ -176,8 +200,9 @@ function VehicleEditor({ vehicle, userId, onDone, onCancel }: { vehicle: Vehicle
   }
   async function save(event: FormEvent) {
     event.preventDefault(); setBusy(true); setProgress('Salvando dados do veículo...')
-    const slugBase = `${form.brand}-${form.model}-${form.year_model}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    const payload = { ...form, optional_items: form.optional_items.split(',').map(x => x.trim()).filter(Boolean), slug: vehicle?.slug || `${slugBase}-${Date.now().toString().slice(-5)}`, updated_by: userId, created_by: vehicle?.id ? undefined : userId, published_at: form.status === 'published' ? new Date().toISOString() : null }
+    const normalized = { ...form, brand: titleCase(form.brand), model: titleCase(form.model), version: titleCase(form.version), transmission: titleCase(form.transmission), fuel: titleCase(form.fuel), color: titleCase(form.color), body_type: titleCase(form.body_type), description: sentenceCase(form.description) }
+    const slugBase = `${normalized.brand}-${normalized.model}-${normalized.year_model}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    const payload = { ...normalized, slug: vehicle?.slug || `${slugBase}-${Date.now().toString().slice(-5)}`, updated_by: userId, created_by: vehicle?.id ? undefined : userId, published_at: form.status === 'published' ? new Date().toISOString() : null }
     const query = vehicle?.id ? supabase.from('vehicles').update(payload).eq('id', vehicle.id).select().single() : supabase.from('vehicles').insert(payload).select().single()
     const { data: saved, error } = await query
     if (error || !saved) { alert(error?.message || 'Não foi possível salvar.'); setBusy(false); return }
@@ -203,13 +228,35 @@ function VehicleEditor({ vehicle, userId, onDone, onCancel }: { vehicle: Vehicle
     await supabase.storage.from('vehicle-media').remove([item.storage_path]); await supabase.from('vehicle_media').delete().eq('id', item.id)
     setMedia(prev => prev.filter(m => m.id !== item.id))
   }
-  return <form onSubmit={save}><div className="page-heading compact"><div><span>{vehicle ? 'EDITAR ANÚNCIO' : 'NOVO ANÚNCIO'}</span><h1>{vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Cadastrar veículo'}</h1><p>Preencha os dados e escolha as melhores fotos. Você pode salvar como rascunho.</p></div><div className="heading-actions"><button type="button" className="secondary" onClick={onCancel}>Cancelar</button><button className="primary" disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Save />}{busy ? progress : 'Salvar anúncio'}</button></div></div>
+  return <form onSubmit={save}><div className="page-heading compact"><div><span>{vehicle ? 'EDITAR ANÚNCIO' : 'NOVO ANÚNCIO'}</span><h1>{vehicle ? `${titleCase(vehicle.brand)} ${titleCase(vehicle.model)}` : 'Cadastrar veículo'}</h1><p>Preencha os dados e escolha as melhores fotos. Você pode salvar como rascunho.</p></div><div className="heading-actions"><button type="button" className="secondary" onClick={() => setPreviewOpen(true)}><Eye /> Prévia do anúncio</button><button type="button" className="secondary" onClick={onCancel}>Cancelar</button><button className="primary" disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Save />}{busy ? progress : 'Salvar anúncio'}</button></div></div>
     <section className="editor-grid"><div className="editor-main">
       <FormSection title="Informações principais" subtitle="Os campos com * são obrigatórios."><div className="form-grid"><Field label="Marca *"><input value={form.brand} onChange={e => set('brand', e.target.value)} required placeholder="Ex.: Toyota" /></Field><Field label="Modelo *"><input value={form.model} onChange={e => set('model', e.target.value)} required placeholder="Ex.: Corolla" /></Field><Field label="Versão"><input value={form.version} onChange={e => set('version', e.target.value)} placeholder="Ex.: XEi 2.0 Flex" /></Field><Field label="Carroceria"><input value={form.body_type} onChange={e => set('body_type', e.target.value)} placeholder="Ex.: Sedã" /></Field><Field label="Ano fabricação *"><input type="number" value={form.year_manufacture} onChange={e => set('year_manufacture', Number(e.target.value))} required /></Field><Field label="Ano modelo *"><input type="number" value={form.year_model} onChange={e => set('year_model', Number(e.target.value))} required /></Field><Field label="Quilometragem"><input type="number" min="0" value={form.mileage} onChange={e => set('mileage', Number(e.target.value))} /></Field><Field label="Preço (R$) *"><input type="number" min="0" step="0.01" value={form.price} onChange={e => set('price', Number(e.target.value))} required /></Field><Field label="Câmbio"><select value={form.transmission} onChange={e => set('transmission', e.target.value)}><option value="">Selecione</option><option>Automático</option><option>Manual</option><option>CVT</option><option>Automatizado</option></select></Field><Field label="Combustível"><select value={form.fuel} onChange={e => set('fuel', e.target.value)}><option value="">Selecione</option><option>Flex</option><option>Gasolina</option><option>Diesel</option><option>Elétrico</option><option>Híbrido</option></select></Field><Field label="Cor"><input value={form.color} onChange={e => set('color', e.target.value)} /></Field></div></FormSection>
       <FormSection title="Fotos e vídeo" subtitle="As fotos são reduzidas automaticamente sem deformar. Vídeo é opcional."><label className="upload-zone"><Upload /><strong>Selecionar fotos ou vídeo</strong><span>Fotos JPG, PNG ou WEBP · vídeo MP4, WEBM ou MOV</span><input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" onChange={e => filesSelected(e.target.files)} /></label><div className="media-grid">{media.map(item => <div className={`media-card ${item.is_cover ? 'cover' : ''}`} key={item.id}>{item.kind === 'image' ? <img src={mediaUrl(item.storage_path)} alt="" style={{ objectPosition: item.object_position }} /> : <video src={mediaUrl(item.storage_path)} />}{item.is_cover && <span className="cover-label">CAPA</span>}<div className="media-actions">{item.kind === 'image' && !item.is_cover && <button type="button" onClick={() => makeCover(item)}>Usar como capa</button>}<button type="button" onClick={() => deleteMedia(item)}><Trash2 /></button></div></div>)}{pending.map((item, index) => <div className={`media-card pending ${pendingCover === index ? 'cover' : ''}`} key={item.preview}>{item.kind === 'image' ? <img src={item.preview} alt="Prévia" /> : <video src={item.preview} />}{pendingCover === index && <span className="cover-label">CAPA</span>}<div className="media-actions">{item.kind === 'image' && <button type="button" onClick={() => setPendingCover(index)}>Usar como capa</button>}<button type="button" onClick={() => setPending(prev => prev.filter((_, i) => i !== index))}><X /></button></div></div>)}</div></FormSection>
-      <FormSection title="Descrição e opcionais"><Field label="Opcionais (separe por vírgulas)"><textarea value={form.optional_items} onChange={e => set('optional_items', e.target.value)} placeholder="Ar-condicionado, Direção elétrica, Câmera de ré" /></Field><Field label="Observações"><textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="Conte os principais diferenciais do veículo..." /></Field></FormSection>
+      <FormSection title="Opcionais" subtitle="Marque os equipamentos do veículo. Eles aparecerão automaticamente no anúncio."><div className="option-groups">{OPTIONAL_GROUPS.map(group => <fieldset className="option-group" key={group.title}><legend>{group.title}</legend><div className="option-grid">{group.items.map(item => <label className={form.optional_items.includes(item) ? 'option-item selected' : 'option-item'} key={item}><input type="checkbox" checked={form.optional_items.includes(item)} onChange={() => set('optional_items', form.optional_items.includes(item) ? form.optional_items.filter(value => value !== item) : [...form.optional_items, item])} /><span>{item}</span></label>)}</div></fieldset>)}</div></FormSection>
+      <FormSection title="Observações"><Field label="Descrição do anúncio"><textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="Conte os principais diferenciais do veículo..." /></Field></FormSection>
     </div><aside className="editor-side"><FormSection title="Publicação"><Field label="Situação"><select value={form.status} onChange={e => set('status', e.target.value as VehicleStatus)}><option value="draft">Rascunho</option><option value="published">Publicado no site</option><option value="sold">Vendido</option><option value="archived">Arquivado</option></select></Field><label className="check-row"><input type="checkbox" checked={form.featured} onChange={e => set('featured', e.target.checked)} /><span><strong>Destacar veículo</strong><small>Aparece primeiro no estoque.</small></span></label></FormSection><FormSection title="Selos do anúncio" subtitle="Escolha os diferenciais que aparecem sobre a foto."><div className="badge-options">{BADGES.map(badge => <label key={badge} className={form.badges.includes(badge) ? 'selected' : ''}><input type="checkbox" checked={form.badges.includes(badge)} onChange={() => set('badges', form.badges.includes(badge) ? form.badges.filter(x => x !== badge) : [...form.badges, badge])} /><BadgeCheck /><span>{badge}</span></label>)}</div></FormSection></aside></section>
+    {previewOpen && <AdPreview form={form} media={media} pending={pending} pendingCover={pendingCover} onClose={() => setPreviewOpen(false)} />}
   </form>
+}
+
+function AdPreview({ form, media, pending, pendingCover, onClose }: { form: VehicleForm; media: VehicleMedia[]; pending: PendingFile[]; pendingCover: number | null; onClose: () => void }) {
+  const storedCover = media.find(item => item.is_cover && item.kind === 'image') || media.find(item => item.kind === 'image')
+  const newCover = pendingCover !== null && pending[pendingCover]?.kind === 'image' ? pending[pendingCover] : pending.find(item => item.kind === 'image')
+  const coverUrl = newCover?.preview || (storedCover ? mediaUrl(storedCover.storage_path) : '')
+  const title = [titleCase(form.brand), titleCase(form.model)].filter(Boolean).join(' ') || 'Nome do veículo'
+  const version = titleCase(form.version) || 'Versão não informada'
+  return <div className="preview-backdrop" role="presentation" onMouseDown={onClose}>
+    <section className="preview-modal" role="dialog" aria-modal="true" aria-label="Prévia do anúncio" onMouseDown={event => event.stopPropagation()}>
+      <header className="preview-header"><div><small>PRÉVIA DO ANÚNCIO</small><h2>Assim o cliente verá o veículo</h2></div><button type="button" onClick={onClose} aria-label="Fechar prévia"><X /></button></header>
+      <div className="preview-content">
+        <div className="preview-photo">{coverUrl ? <img src={coverUrl} alt={title} /> : <div className="preview-placeholder"><CarFront /><span>Adicione uma foto de capa</span></div>}{form.badges.length > 0 && <div className="preview-badges">{form.badges.map(badge => <span key={badge}><BadgeCheck />{badge}</span>)}</div>}</div>
+        <div className="preview-info"><span className={`status ${form.status}`}>{STATUS[form.status]}</span><h1>{title}</h1><p className="preview-version">{version}</p><strong className="preview-price">{Number(form.price || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong><div className="preview-specs"><div><small>ANO</small><b>{form.year_manufacture}/{form.year_model}</b></div><div><small>QUILOMETRAGEM</small><b>{Number(form.mileage || 0).toLocaleString('pt-BR')} km</b></div><div><small>COMBUSTÍVEL</small><b>{titleCase(form.fuel) || 'Não informado'}</b></div><div><small>CÂMBIO</small><b>{titleCase(form.transmission) || 'Não informado'}</b></div><div><small>COR</small><b>{titleCase(form.color) || 'Não informada'}</b></div><div><small>CARROCERIA</small><b>{titleCase(form.body_type) || 'Não informada'}</b></div></div></div>
+        <div className="preview-section"><h3>Opcionais</h3>{form.optional_items.length ? <div className="preview-options">{form.optional_items.map(item => <span key={item}><CheckCircle2 />{item}</span>)}</div> : <p>Nenhum opcional selecionado.</p>}</div>
+        {form.description && <div className="preview-section"><h3>Observações</h3><p>{sentenceCase(form.description)}</p></div>}
+      </div>
+      <footer className="preview-footer"><button type="button" className="primary" onClick={onClose}>Continuar editando</button></footer>
+    </section>
+  </div>
 }
 
 async function optimizeImage(file: File): Promise<Blob> {
