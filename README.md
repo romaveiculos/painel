@@ -21,4 +21,4 @@ As variáveis públicas do Supabase já possuem valores padrão para facilitar a
 
 ## Banco de dados
 
-A estrutura completa está em `supabase/migrations/20260907150000_initial_admin.sql` e inclui autenticação, estoque, configurações, mídias, bucket e políticas RLS.
+O projeto Supabase da Roma Veículos já está configurado com autenticação, estoque, configurações, mídias e políticas de segurança.
