@@ -18,13 +18,21 @@ const emptySettings: SiteSettings = {
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [recovery, setRecovery] = useState(false)
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setLoading(false) })
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next))
+    const { data } = supabase.auth.onAuthStateChange((event, next) => { setSession(next); if (event === 'PASSWORD_RECOVERY') setRecovery(true) })
     return () => data.subscription.unsubscribe()
   }, [])
   if (loading) return <FullLoader text="Abrindo painel..." />
+  if (session && recovery) return <PasswordReset onDone={() => setRecovery(false)} />
   return session ? <AdminGate session={session} /> : <AuthScreen />
+}
+
+function PasswordReset({ onDone }: { onDone: () => void }) {
+  const [password, setPassword] = useState(''); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('')
+  async function submit(e: FormEvent) { e.preventDefault(); setBusy(true); const { error } = await supabase.auth.updateUser({ password }); setBusy(false); if (error) setMessage(error.message); else onDone() }
+  return <main className="auth-shell"><section className="auth-brand"><img src="/logo-roma.png" alt="Roma Veículos" /><div><span>RECUPERAÇÃO SEGURA</span><h1>Crie sua nova senha.</h1><p>Escolha uma senha forte que só a equipe responsável conheça.</p></div></section><section className="auth-card"><div className="auth-title"><ShieldCheck /><div><small>NOVA SENHA</small><h2>Atualizar acesso</h2></div></div><form onSubmit={submit}><Field label="Nova senha"><input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} required autoComplete="new-password" /></Field>{message && <div className="form-message">{message}</div>}<button className="primary full" disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Save />}Salvar nova senha</button></form></section></main>
 }
 
 function AuthScreen() {
@@ -37,7 +45,7 @@ function AuthScreen() {
     event.preventDefault(); setBusy(true); setMessage('')
     const response = mode === 'login'
       ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password, options: { data: { name: 'Roma Veículos' } } })
+      : await supabase.auth.signUp({ email, password, options: { data: { name: 'Roma Veículos' }, emailRedirectTo: window.location.origin } })
     if (response.error) setMessage(response.error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : response.error.message)
     else if (mode === 'signup' && !response.data.session) setMessage('Cadastro criado. Confirme o e-mail recebido e depois entre no painel.')
     setBusy(false)
